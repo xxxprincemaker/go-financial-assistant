@@ -17,7 +17,7 @@ import (
 	"github.com/openai/openai-go/v3/shared"
 )
 
-const defaultModel = "gpt-4o-mini"
+const defaultModel = "gpt-6-luna"
 
 // Client implementa as interfaces de análise e Coach usando a Responses API.
 type Client struct {

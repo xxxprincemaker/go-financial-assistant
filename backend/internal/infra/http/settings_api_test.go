@@ -332,7 +332,7 @@ func TestSettingsAPI_TestConnections(t *testing.T) {
 	if got := post("ai"); !strings.Contains(got, `"ok":false`) || !strings.Contains(got, "OpenAI") {
 		t.Errorf("sem chave do provedor ativo: %s", got)
 	}
-	e.svc.Set(context.Background(), map[string]string{"OPENAI_API_KEY": "boa", "OPENAI_MODEL": "gpt-4o-mini"}) //nolint:errcheck
+	e.svc.Set(context.Background(), map[string]string{"OPENAI_API_KEY": "boa", "OPENAI_MODEL": "gpt-6-luna"}) //nolint:errcheck
 	if got := post("ai"); !strings.Contains(got, `"ok":true`) || !strings.Contains(got, "OpenAI") {
 		t.Errorf("OpenAI ativo: %s", got)
 	}

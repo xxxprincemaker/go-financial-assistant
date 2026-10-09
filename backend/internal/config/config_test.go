@@ -40,7 +40,7 @@ func TestLoad_Success(t *testing.T) {
 	if cfg.GeminiAPIKey != "gemini-key" {
 		t.Errorf("GeminiAPIKey incorreta: %s", cfg.GeminiAPIKey)
 	}
-	if cfg.AIProvider != "gemini" || cfg.OpenAIModel != "gpt-4o-mini" || cfg.AICoachEnabled {
+	if cfg.AIProvider != "gemini" || cfg.OpenAIModel != "gpt-6-luna" || cfg.AICoachEnabled {
 		t.Errorf("padrões de IA incorretos: provider=%q model=%q coach=%v", cfg.AIProvider, cfg.OpenAIModel, cfg.AICoachEnabled)
 	}
 	if cfg.EvolutionAPIURL != "http://evolution:8080" {

@@ -86,7 +86,7 @@ var Defs = []Def{
 	{Key: "AI_PROVIDER", Group: GroupAI, Label: "Provedor ativo", Kind: KindEnum, Options: []string{"gemini", "openai"}, Default: "gemini", Live: true},
 	{Key: "GEMINI_API_KEY", Group: GroupAI, Label: "Chave da API do Gemini", Help: "Opcional. A chave é usada quando Gemini é o provedor ativo.", Kind: KindSecret, Live: true, Validate: validToken},
 	{Key: "OPENAI_API_KEY", Group: GroupAI, Label: "Chave da API da OpenAI", Help: "Opcional. Use uma chave da plataforma OpenAI; a assinatura ChatGPT não inclui uso da API. A chave é usada quando OpenAI é o provedor ativo.", Kind: KindSecret, Live: true, Validate: validToken},
-	{Key: "OPENAI_MODEL", Group: GroupAI, Label: "Modelo da OpenAI", Help: "Vazio usa gpt-4o-mini. O modelo precisa aceitar texto, imagens, PDFs e saída estruturada.", Kind: KindText, Default: "gpt-4o-mini", Live: true, Validate: validToken},
+	{Key: "OPENAI_MODEL", Group: GroupAI, Label: "Modelo da OpenAI", Help: "Vazio usa gpt-6-luna. O modelo precisa aceitar texto, imagens, PDFs e saída estruturada.", Kind: KindText, Default: "gpt-6-luna", Live: true, Validate: validToken},
 	{Key: "AI_COACH_ENABLED", Group: GroupAI, Label: "Autorizar envio de dados ao Coach", Help: "O Coach envia à IA os dados financeiros mostrados na prévia. Só habilite se você autoriza o provedor ativo a receber esse contexto.", Kind: KindBool, Default: "false", Live: true},
 	{Key: "GEMINI_PAID_PLAN", Group: GroupAI, Label: "", Kind: KindBool, Default: "false", Live: true, Internal: true}, // Compatibilidade com a autorização antiga do Coach.
 	{Key: "COACH_GEMINI_MODEL", Group: GroupAI, Label: "Modelo do Coach", Help: "Vazio usa o padrão do app.", Kind: KindText, Live: true, Validate: validToken},

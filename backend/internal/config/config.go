@@ -171,7 +171,7 @@ func (l *loader) app(cfg *Config) {
 	}
 	cfg.GeminiAPIKey = strings.TrimSpace(l.get("GEMINI_API_KEY", ""))
 	cfg.OpenAIAPIKey = strings.TrimSpace(l.get("OPENAI_API_KEY", ""))
-	cfg.OpenAIModel = strings.TrimSpace(l.get("OPENAI_MODEL", "gpt-4o-mini"))
+	cfg.OpenAIModel = strings.TrimSpace(l.get("OPENAI_MODEL", "gpt-6-luna"))
 	cfg.GeminiPaidPlan = l.boolean("GEMINI_PAID_PLAN", false)
 	if l.has("AI_COACH_ENABLED") {
 		cfg.AICoachEnabled = l.boolean("AI_COACH_ENABLED", false)

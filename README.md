@@ -215,7 +215,7 @@ Para buscar na hora, use o botão **Sincronizar** do menu lateral ou mande `/syn
 A IA (Google Gemini ou OpenAI) entende o que você escreve no Telegram, lê fotos de recibo e PDFs de extrato, sugere categorias e alimenta o **Coach**. Há um provedor ativo por vez, selecionado em **Configurações → Inteligência Artificial**. **Sem uma chave válida o app continua funcionando:** Open Finance, dashboard e comandos `/saldos`, `/resumo` e `/sync` não dependem da IA. Mensagens livres explicam como configurar o provedor.
 
 1. Escolha Google Gemini ou OpenAI e crie uma chave de API no serviço escolhido.
-2. No dashboard, abra **Configurações → Inteligência Artificial**, selecione o provedor e cole a chave correspondente. Para OpenAI, escolha também o modelo (padrão `gpt-4o-mini`).
+2. No dashboard, abra **Configurações → Inteligência Artificial**, selecione o provedor e cole a chave correspondente. Para OpenAI, escolha também o modelo (padrão `gpt-6-luna`).
 3. Salve (a mudança de provedor e as chaves pedem confirmação) e clique em **Testar conexão**. A troca vale na hora; não há fallback automático para o outro provedor.
 
 A API da OpenAI exige uma chave da plataforma e cobrança própria, separada da assinatura ChatGPT.

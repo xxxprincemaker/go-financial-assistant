@@ -14,7 +14,7 @@ const expenseJSON = `{"type":"SINGLE","amount":45,"description":"Almoço","categ
 
 func responseBody(output string) string {
 	encoded, _ := json.Marshal(output)
-	return `{"id":"resp_test","created_at":1,"model":"gpt-4o-mini","status":"completed","output":[{"id":"msg_test","type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":` + string(encoded) + `,"annotations":[]}]}]}`
+	return `{"id":"resp_test","created_at":1,"model":"gpt-6-luna","status":"completed","output":[{"id":"msg_test","type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":` + string(encoded) + `,"annotations":[]}]}]}`
 }
 
 func fakeResponsesServer(t *testing.T, status int, output string) (*httptest.Server, *string, *string) {
@@ -121,7 +121,7 @@ func TestResponsesEmptyOutputAndAPIError(t *testing.T) {
 		status int
 		body   string
 	}{
-		"vazia":       {http.StatusOK, `{"id":"resp_empty","created_at":1,"model":"gpt-4o-mini","status":"completed","output":[]}`},
+		"vazia":       {http.StatusOK, `{"id":"resp_empty","created_at":1,"model":"gpt-6-luna","status":"completed","output":[]}`},
 		"erro da API": {http.StatusTooManyRequests, ""},
 	} {
 		t.Run(name, func(t *testing.T) {
