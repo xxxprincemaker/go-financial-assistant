@@ -4,8 +4,8 @@ Aplicação pessoal de finanças: um backend em Go (API + canal de conversa + jo
 
 ```
 Telegram / WhatsApp ──┐                                   ┌── Postgres
-                      ├─► backend Go ──► usecase ──► ports ──► infra (db, pluggy, gemini, ...)
-Dashboard (React) ────┘     (http, chat, app)                └── Pluggy / Gemini / Telegram / Evolution
+                      ├─► backend Go ──► usecase ──► ports ──► infra (db, pluggy, ai, ...)
+Dashboard (React) ────┘     (http, chat, app)                └── Pluggy / Gemini / OpenAI / Telegram / Evolution
 ```
 
 ## Camadas do backend (`backend/internal/`)
@@ -15,7 +15,7 @@ Dashboard (React) ────┘     (http, chat, app)                └──
 | `domain` | Entidades e regras puras: `Purchase`, `Payment`, `Account`, `Goal`, `MonthTotals`, `Clock`, `OwnTransferMatcher`... Sem I/O. | nada do projeto |
 | `domain/ports` | **Só interfaces** (contratos): leituras por contexto (`BudgetReader`, `ReviewReader`...), `LedgerStore`, `ExternalStore`, `Messenger`, `Coach`, `OpenFinanceProvider`... | `domain` |
 | `usecase/*` | Casos de uso e regras de cálculo, um pacote por contexto (abaixo). | `domain`, `ports`, `format` |
-| `infra/*` | Adaptadores: `db` (Postgres), `http` (API e webhook), `pluggy`, `gemini`, `telegram`, `evolution`, `logo`. | `domain`, `ports`, `usecase` |
+| `infra/*` | Adaptadores: `db` (Postgres), `http` (API e webhook), `pluggy`, `ai` (roteador em tempo real), `gemini`, `openai`, `telegram`, `evolution`, `logo`. | `domain`, `ports`, `usecase` |
 | `chat` | Interpreta mensagens do dono e responde (comandos, registro, importação). | `usecase`, `ports` |
 | `settings` | Configurações editáveis no dashboard (valor salvo > ambiente > padrão), segredos cifrados. | `domain` |
 | `config` | Lê e valida o ambiente (`Load(overrides)`). | — |
@@ -50,11 +50,11 @@ Cada contexto tem o seu `*_api.go` com os handlers e um `register*` com as rotas
 
 **Sincronização do Open Finance** (`app/sync.go` → `usecase/openfinance`): a cada minuto o laço relê a configuração; se há credenciais e o intervalo venceu, busca por item (`pluggy.FetchItem`): conector (banco, cor, logo), contas e transações dos últimos `SYNC_LOOKBACK_DAYS` dias. Cada transação passa por `pluggy/mapper.go` (descarta o que não é gasto nem renda, classifica) e por `SyncOne`: já existe? concilia com lançamento manual? senão cria. É idempotente (o ID da origem é único).
 
-**Mensagem do chat** (`chat.Handler`): comandos fixos (`/sync`, `/resumo`, `/saldos`, confirmações) são tratados sem IA; o resto vai para `ledger.AnalyzeExpense`, que usa o Gemini para entender texto, imagem ou extrato e grava os lançamentos.
+**Mensagem do chat** (`chat.Handler`): comandos fixos (`/sync`, `/resumo`, `/saldos`, confirmações) são tratados sem IA; o resto vai para `ledger.AnalyzeExpense`, que usa o provedor ativo (Gemini ou OpenAI) para entender texto, imagem ou extrato e grava os lançamentos.
 
 **Requisição do dashboard**: nginx (`frontend/nginx.conf`) serve o React e repassa `/api` ao backend na mesma origem (sem CORS). A sessão é um cookie assinado; cada rota passa por limite de taxa e sessão (`routes.protected`).
 
-**Configurações** (`settings`): valor salvo no dashboard > variável de ambiente > padrão. Valem na hora resumo, sincronização, nomes, Pluggy e plano pago do Coach; o resto pede reinício. Segredos são cifrados com `APP_SECRET_KEY`/`APP_SECRET_KEY_FILE` (veja [as decisões](decisoes/)).
+**Configurações** (`settings`): valor salvo no dashboard > variável de ambiente > padrão. Provedor, chaves e modelo OpenAI são aplicados na hora pelo roteador de IA; não há fallback automático. A autorização `AI_COACH_ENABLED` herda `GEMINI_PAID_PLAN` apenas quando a configuração nova está ausente. Segredos são cifrados com `APP_SECRET_KEY`/`APP_SECRET_KEY_FILE` (veja [as decisões](decisoes/)).
 
 ## Frontend (`frontend/src/`)
 

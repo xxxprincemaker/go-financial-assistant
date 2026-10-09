@@ -15,11 +15,19 @@ import (
 )
 
 type fakeCoach struct {
-	advice  ports.CoachAdvice
-	err     error
-	calls   int
-	payload []byte
-	cats    []ports.CategorySuggestion
+	advice   ports.CoachAdvice
+	err      error
+	calls    int
+	payload  []byte
+	cats     []ports.CategorySuggestion
+	provider string
+}
+
+func (f *fakeCoach) ProviderName() string {
+	if f.provider != "" {
+		return f.provider
+	}
+	return "Provedor de IA ativo"
 }
 
 func (f *fakeCoach) Categorize(_ context.Context, payload []byte) ([]ports.CategorySuggestion, error) {
@@ -63,6 +71,7 @@ var jsonHeader = map[string]string{"Content-Type": "application/json"}
 type previewBody struct {
 	Enabled       bool            `json:"enabled"`
 	BlockedReason string          `json:"blockedReason"`
+	Provider      string          `json:"provider"`
 	Hash          string          `json:"hash"`
 	Bytes         int             `json:"bytes"`
 	Context       json.RawMessage `json:"context"`
@@ -94,7 +103,7 @@ func TestAPI_CoachPreview(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			s := newCoachAPI(t, coachReader(), tc.coach, tc.paid)
 			p := preview(t, s, login(t, s))
-			if p.Enabled != tc.want || (!tc.want && !strings.Contains(p.BlockedReason, "GEMINI_PAID_PLAN")) {
+			if p.Enabled != tc.want || (!tc.want && !strings.Contains(p.BlockedReason, "autorizar")) {
 				t.Errorf("enabled=%v motivo=%q", p.Enabled, p.BlockedReason)
 			}
 			ctx := string(p.Context)
@@ -115,6 +124,14 @@ func TestAPI_CoachPreview(t *testing.T) {
 	}
 	if rec := do(s, "GET", "/api/coach/preview", "", nil, login(t, s)); rec.Code != 400 {
 		t.Errorf("sem mês = %d", rec.Code)
+	}
+}
+
+func TestAPI_CoachPreviewIdentifiesActiveProvider(t *testing.T) {
+	s := newCoachAPI(t, coachReader(), &fakeCoach{provider: "OpenAI"}, true)
+	p := preview(t, s, login(t, s))
+	if p.Provider != "OpenAI" {
+		t.Fatalf("provedor exibido na prévia = %q", p.Provider)
 	}
 }
 

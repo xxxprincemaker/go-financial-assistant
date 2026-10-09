@@ -62,6 +62,7 @@ export function SettingInput({ field: f, value, encryption, busy, onChange, onRe
 
       <p className="tile-note" id={helpId}>
         {f.help}
+        {f.source === 'legacy' && ' Esta autorização vem da configuração antiga GEMINI_PAID_PLAN; altere este campo e salve para assumir o controle.'}
         {f.kind === 'secret' && !encryption && ' Defina APP_SECRET_KEY no ambiente para guardar segredos aqui.'}
         {f.pendingRestart && ' Alterado: falta reiniciar o app para valer.'}
       </p>

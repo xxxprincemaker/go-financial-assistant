@@ -33,7 +33,7 @@ O app expõe uma API JSON sob `/api`, **somente leitura** (as únicas escritas, 
 | `PUT /api/savings/decisions` | marca (ou desfaz) "cancelei" numa sugestão fixa ou de gasto formiga; só JSON na mesma origem |
 | `GET /api/goals` | metas com o andamento calculado na hora: patrimônio (contas correntes + investimentos), projeção e gastos por categoria |
 | `POST /api/goals`, `DELETE /api/goals/{id}` | cria (juntar valor até uma data, reduzir uma categoria, reserva de N meses; máx. 20) ou apaga uma meta; só JSON na mesma origem |
-| `GET /api/coach/preview?month=` | o que o Coach enviaria ao Gemini (mesmo JSON, com hash), sem enviar nada |
+| `GET /api/coach/preview?month=` | o que o Coach enviaria ao provedor ativo (mesmo JSON, com hash e identificação do provedor), sem enviar nada |
 | `POST /api/coach/analyze` | envia o que a prévia mostrou (o hash precisa bater) e devolve a análise da IA validada; só JSON na mesma origem, 3/min por IP, uma por vez |
 | `GET /api/coach/analyses?month=` | análises guardadas do mês, com as respostas que você deu |
 | `PUT /api/coach/analyses/{id}/answers`, `DELETE /api/coach/analyses/{id}` | grava (ou apaga, se vazia) a resposta a uma pergunta da IA; apaga a análise. Só JSON na mesma origem |
@@ -64,12 +64,12 @@ Cada passo vai para o histórico de alterações das Configurações (ação `se
 
 | Rota | Conteúdo |
 | --- | --- |
-| `GET /api/settings` | configurações do canal ativo, com a origem do valor (salvo, ambiente ou padrão); segredos nunca voltam, só "configurado". `secondFactor` diz como se confirma o que é sensível |
+| `GET /api/settings` | configurações do canal ativo, com a origem do valor (salvo, ambiente, legado ou padrão); segredos nunca voltam, só "configurado". `secondFactor` diz como se confirma o que é sensível |
 | `POST /api/settings/confirm` | manda ao chat o código que confirma a próxima alteração sensível desta sessão (`409` sem segundo fator) |
 | `PUT /api/settings` | salva um lote (tudo ou nada); mudar o que é sensível exige `code` (o código de `/api/settings/confirm`, uso único) ou, sem segundo fator, `password` (a senha do dashboard). Ao mudar `OWN_NAMES`, a resposta traz os Pix/TED antigos parecidos |
 | `POST /api/settings/reset/{key}` | volta ao valor do ambiente/padrão (sensíveis exigem `code` ou `password`, como acima) |
 | `GET /api/settings/audit` | últimas alterações (sem valores) |
 | `POST /api/settings/own-transfers/apply` | cancela as transferências entre contas suas encontradas |
-| `POST /api/settings/test/{pluggy\|gemini\|telegram}` | testa a conexão com as credenciais salvas |
+| `POST /api/settings/test/{pluggy\|ai\|telegram}` | testa a conexão com o provedor de IA ativo ou as outras credenciais salvas |
 | `POST /api/restart` | pede ao processo que reinicie (o Docker o sobe de novo) |
 

@@ -25,22 +25,21 @@ import (
 const (
 	maxCoachBody     = 1 << 10
 	coachTimeout     = 45 * time.Second
-	coachBlockedText = "O Coach envia valores e nomes de serviços ao Google Gemini. No plano gratuito o Google pode usar e revisar esse conteúdo, " +
-		"então ele só funciona com o plano pago: ative o faturamento do projeto da chave, defina GEMINI_PAID_PLAN=true no .env e reinicie o app."
-	aiOffText = "A IA está desligada: coloque a chave do Gemini em Configurações → IA (Gemini). Vale na hora, sem reiniciar."
+	coachBlockedText = "O Coach está bloqueado até você autorizar o envio dos dados financeiros da prévia ao provedor de IA ativo. Ative Autorizar envio de dados ao Coach em Configurações → Inteligência Artificial."
+	aiOffText        = "A IA está desligada: configure a chave do provedor ativo em Configurações → Inteligência Artificial. Vale na hora, sem reiniciar."
 )
 
 // coachService guarda o estado do Coach: uma análise por vez (a quantidade de análises é problema de quem hospeda).
 type coachService struct {
-	advisor ports.Coach
-	paid    bool
-	paidFn  func() bool // quando definido, vale no lugar de paid (configuração editável no dashboard)
+	advisor        ports.Coach
+	defaultEnabled bool
+	enabledFn      func() bool // configuração editável no dashboard
 
 	busy atomic.Bool
 }
 
-func newCoachService(advisor ports.Coach, paid bool) *coachService {
-	return &coachService{advisor: advisor, paid: paid}
+func newCoachService(advisor ports.Coach, enabled bool) *coachService {
+	return &coachService{advisor: advisor, defaultEnabled: enabled}
 }
 
 func (c *coachService) enabled() bool { return c.blockedReason() == "" }
@@ -50,18 +49,25 @@ func (c *coachService) blockedReason() string {
 	if c.advisor == nil {
 		return coachBlockedText
 	}
-	// O cliente do Gemini sabe se tem chave; sem ela, o caminho é configurar, não o plano pago.
+	// O roteador de provedores sabe se há chave para o provedor ativo.
 	if r, ok := c.advisor.(interface{ Ready() bool }); ok && !r.Ready() {
 		return aiOffText
 	}
-	paid := c.paid
-	if c.paidFn != nil {
-		paid = c.paidFn()
+	enabled := c.defaultEnabled
+	if c.enabledFn != nil {
+		enabled = c.enabledFn()
 	}
-	if !paid {
+	if !enabled {
 		return coachBlockedText
 	}
 	return ""
+}
+
+func (c *coachService) providerName() string {
+	if p, ok := c.advisor.(interface{ ProviderName() string }); ok {
+		return p.ProviderName()
+	}
+	return "Provedor de IA ativo"
 }
 
 // begin reserva a análise; recusa se já há uma em andamento (clique duplo, aba aberta em dois lugares).
@@ -121,7 +127,7 @@ func (a *api) coachPreview(w http.ResponseWriter, r *http.Request) {
 	}
 	blocked := a.coach.blockedReason()
 	writeJSON(w, http.StatusOK, map[string]any{
-		"enabled": a.coach.enabled(), "blockedReason": blocked, "provider": "Google Gemini", "month": formatMonth(month),
+		"enabled": a.coach.enabled(), "blockedReason": blocked, "provider": a.coach.providerName(), "month": formatMonth(month),
 		"bytes": len(in.payload), "hash": in.hash, "context": json.RawMessage(in.payload),
 	})
 }

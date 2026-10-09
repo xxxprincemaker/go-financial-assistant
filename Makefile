@@ -1,4 +1,4 @@
-.PHONY: init run build test lint front-dev front-test front-build compose-up compose-down compose-logs db-shell backup restore secret-key
+.PHONY: init run build test lint front-dev front-test front-build compose-up compose-dev compose-down compose-logs db-shell backup restore secret-key
 
 # Instalação nova: cria o .env, a chave mestra e o SETUP_TOKEN (sem sobrescrever nada). Depois: docker compose up -d
 # e abra o dashboard para o setup pelo navegador.
@@ -25,6 +25,9 @@ lint:
 compose-up:
 	docker compose up -d --build
 	docker compose logs -f app
+
+compose-dev:
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 compose-down:
 	docker compose down
@@ -68,6 +71,7 @@ help:
 	@echo "  make test-coverage    Testes com relatório de cobertura"
 	@echo "  make lint             Verifica estilo e bugs"
 	@echo "  make compose-up       Sobe tudo no Docker"
+	@echo "  make compose-dev      Sobe Go com Air e frontend com Vite/HMR (porta 5173)"
 	@echo "  make compose-down     Derruba os containers"
 	@echo "  make compose-reset    Derruba tudo + apaga volumes"
 	@echo "  make compose-logs     Logs de todos os serviços"

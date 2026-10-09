@@ -39,7 +39,7 @@ var Groups = []struct{ ID, Title, Help string }{
 	{GroupDigest, "Resumo semanal", "Mensagem de resumo no seu chat, calculada por código (sem IA)."},
 	{GroupSync, "Sincronização", "Com que frequência o app busca as transações no banco."},
 	{GroupPluggy, "Open Finance (Meu Pluggy)", "Credenciais da aplicação Pluggy e os bancos conectados."},
-	{GroupAI, "IA (Gemini)", "Usada para ler notas, extratos e no Coach."},
+	{GroupAI, "Inteligência Artificial", "Escolha o provedor usado para mensagens, recibos, extratos, Coach e categorias."},
 	{GroupTelegram, "Telegram", "Bot e conta autorizada a falar com ele."},
 	{GroupWhatsApp, "WhatsApp (Evolution API)", "Conexão com a Evolution API e números autorizados."},
 }
@@ -83,8 +83,12 @@ var Defs = []Def{
 	{Key: "PLUGGY_CLIENT_SECRET", Group: GroupPluggy, Label: "Client Secret", Help: "Trate como senha.", Kind: KindSecret, Live: true, Validate: validToken},
 	{Key: "PLUGGY_ITEM_IDS", Group: GroupPluggy, Label: "Item IDs dos bancos", Help: "Um UUID por banco conectado no Meu Pluggy, separados por vírgula.", Kind: KindList, Live: true, Validate: validUUIDs},
 
-	{Key: "GEMINI_API_KEY", Group: GroupAI, Label: "Chave da API do Gemini", Help: "Opcional. Sem ela, o chat funciona com os comandos e o dashboard inteiro; o que precisa de IA (mensagens livres, recibos, extratos, Coach) avisa como ligar.", Kind: KindSecret, Live: true, Validate: validToken},
-	{Key: "GEMINI_PAID_PLAN", Group: GroupAI, Label: "O projeto da chave tem faturamento (plano pago)", Help: "O Coach envia valores e nomes de estabelecimentos ao Gemini. No plano gratuito o Google pode usar esse conteúdo, então só marque se a chave é de um projeto pago. Sem isso, o Coach fica bloqueado.", Kind: KindBool, Default: "false", Live: true},
+	{Key: "AI_PROVIDER", Group: GroupAI, Label: "Provedor ativo", Kind: KindEnum, Options: []string{"gemini", "openai"}, Default: "gemini", Live: true},
+	{Key: "GEMINI_API_KEY", Group: GroupAI, Label: "Chave da API do Gemini", Help: "Opcional. A chave é usada quando Gemini é o provedor ativo.", Kind: KindSecret, Live: true, Validate: validToken},
+	{Key: "OPENAI_API_KEY", Group: GroupAI, Label: "Chave da API da OpenAI", Help: "Opcional. Use uma chave da plataforma OpenAI; a assinatura ChatGPT não inclui uso da API. A chave é usada quando OpenAI é o provedor ativo.", Kind: KindSecret, Live: true, Validate: validToken},
+	{Key: "OPENAI_MODEL", Group: GroupAI, Label: "Modelo da OpenAI", Help: "Vazio usa gpt-4o-mini. O modelo precisa aceitar texto, imagens, PDFs e saída estruturada.", Kind: KindText, Default: "gpt-4o-mini", Live: true, Validate: validToken},
+	{Key: "AI_COACH_ENABLED", Group: GroupAI, Label: "Autorizar envio de dados ao Coach", Help: "O Coach envia à IA os dados financeiros mostrados na prévia. Só habilite se você autoriza o provedor ativo a receber esse contexto.", Kind: KindBool, Default: "false", Live: true},
+	{Key: "GEMINI_PAID_PLAN", Group: GroupAI, Label: "", Kind: KindBool, Default: "false", Live: true, Internal: true}, // Compatibilidade com a autorização antiga do Coach.
 	{Key: "COACH_GEMINI_MODEL", Group: GroupAI, Label: "Modelo do Coach", Help: "Vazio usa o padrão do app.", Kind: KindText, Live: true, Validate: validToken},
 
 	{Key: "TELEGRAM_BOT_TOKEN", Group: GroupTelegram, Label: "Token do bot", Help: "Criado no @BotFather.", Kind: KindSecret, Channel: "telegram", Validate: validToken},
@@ -106,7 +110,7 @@ func init() {
 // sensitiveKeys, além dos segredos, são o que redireciona dados ou abre acesso: trocar o Item ID, o ID autorizado no
 // Telegram ou o endereço da Evolution API entregaria os dados (ou o controle do bot) a outra pessoa.
 var sensitiveKeys = map[string]bool{
-	"PLUGGY_CLIENT_ID": true, "PLUGGY_ITEM_IDS": true, "TELEGRAM_CHAT_ID": true,
+	"AI_PROVIDER": true, "PLUGGY_CLIENT_ID": true, "PLUGGY_ITEM_IDS": true, "TELEGRAM_CHAT_ID": true,
 	"EVOLUTION_API_URL": true, "EVOLUTION_INSTANCE": true, "OWNER_PHONE": true, "ALLOWED_NUMBERS": true,
 }
 

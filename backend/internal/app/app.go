@@ -18,9 +18,11 @@ import (
 
 	"github.com/MarcosAAlbanoJunior/go-financial-assistant/internal/config"
 	"github.com/MarcosAAlbanoJunior/go-financial-assistant/internal/domain/ports"
+	"github.com/MarcosAAlbanoJunior/go-financial-assistant/internal/infra/ai"
 	"github.com/MarcosAAlbanoJunior/go-financial-assistant/internal/infra/db"
 	"github.com/MarcosAAlbanoJunior/go-financial-assistant/internal/infra/gemini"
 	httpserver "github.com/MarcosAAlbanoJunior/go-financial-assistant/internal/infra/http"
+	openaiinfra "github.com/MarcosAAlbanoJunior/go-financial-assistant/internal/infra/openai"
 	"github.com/MarcosAAlbanoJunior/go-financial-assistant/internal/settings"
 	"github.com/MarcosAAlbanoJunior/go-financial-assistant/internal/setup"
 )
@@ -38,6 +40,8 @@ type app struct {
 	onChange func() <-chan struct{} // devolve um canal que acorda quem lê a configuração quando ela muda
 
 	gemini         *gemini.Client
+	openai         *openaiinfra.Client
+	aiRouter       *ai.Router
 	ledger         ports.PurchaseRepository
 	analyzeExpense *ledger.AnalyzeExpense
 	exportCSV      *ledger.ExportCSV
@@ -93,23 +97,28 @@ func Run(ctx context.Context, cancel context.CancelFunc, logger *slog.Logger) er
 // buildServices cria os clientes externos, os repositórios e os casos de uso.
 func (a *app) buildServices() error {
 	var err error
-	if a.gemini, err = gemini.NewClient(a.ctx, a.cfg.GeminiAPIKey); err != nil {
+	if a.gemini, err = gemini.NewClient(a.ctx, a.settings.Get("GEMINI_API_KEY")); err != nil {
 		return fmt.Errorf("cliente do Gemini: %w", err)
 	}
-	if !a.gemini.Ready() {
-		a.logger.Warn("IA desligada (sem GEMINI_API_KEY): o chat atende os comandos e o dashboard funciona; configure a chave em Configurações → IA")
-	}
+	a.openai = openaiinfra.NewClient(a.settings.Get("OPENAI_API_KEY"), a.settings.Get("OPENAI_MODEL"))
+	a.aiRouter = ai.NewRouter(a.settings.Get("AI_PROVIDER"), a.gemini, a.openai)
 	a.gemini.SetCoachModel(a.settings.Get("COACH_GEMINI_MODEL"))
-	// A chave e o modelo valem sem reiniciar.
+	// O provedor, as chaves e os modelos valem sem reiniciar.
 	a.settings.OnChange(func() {
 		a.gemini.SetCoachModel(a.settings.Get("COACH_GEMINI_MODEL"))
 		if err := a.gemini.SetAPIKey(a.ctx, a.settings.Get("GEMINI_API_KEY")); err != nil {
 			a.logger.Error("chave do Gemini não aplicada", "error", err)
 		}
+		a.openai.SetAPIKey(a.settings.Get("OPENAI_API_KEY"))
+		a.openai.SetModel(a.settings.Get("OPENAI_MODEL"))
+		a.aiRouter.SetProvider(a.settings.Get("AI_PROVIDER"))
 	})
+	if !a.aiRouter.Ready() {
+		a.logger.Warn("IA desligada: configure a chave do provedor ativo em Configurações → Inteligência Artificial", "provider", a.aiRouter.ProviderName())
+	}
 
 	a.ledger = db.NewPurchaseRepository(a.db)
-	a.analyzeExpense = ledger.NewAnalyzeExpense(a.ledger, a.gemini, a.logger)
+	a.analyzeExpense = ledger.NewAnalyzeExpense(a.ledger, a.aiRouter, a.logger)
 	a.exportCSV = ledger.NewExportCSV(a.ledger)
 	a.insights = insights.NewInsights(db.NewDashboardReader(a.db))
 
@@ -128,8 +137,8 @@ func (a *app) applyTimezone() {
 
 // close libera o que já tinha sido aberto, mesmo se a montagem falhou no meio.
 func (a *app) close() {
-	if a.gemini != nil {
-		_ = a.gemini.Close()
+	if a.aiRouter != nil {
+		_ = a.aiRouter.Close()
 	}
 	if a.db != nil {
 		a.db.Close()

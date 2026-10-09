@@ -107,7 +107,7 @@ func (c *Client) Advise(ctx context.Context, contextJSON []byte) (ports.CoachAdv
 
 func parseCoachResponse(resp *genai.GenerateContentResponse) (ports.CoachAdvice, error) {
 	if resp == nil || len(resp.Candidates) == 0 || resp.Candidates[0].Content == nil || len(resp.Candidates[0].Content.Parts) == 0 {
-		return ports.CoachAdvice{}, fmt.Errorf("gemini retornou resposta vazia")
+		return ports.CoachAdvice{}, fmt.Errorf("provedor de IA retornou resposta vazia")
 	}
 	var raw coachResponse
 	if err := json.Unmarshal([]byte(resp.Candidates[0].Content.Parts[0].Text), &raw); err != nil {
@@ -177,7 +177,7 @@ var CategorizeEnum = []string{"FOOD", "MARKET", "TRANSPORT", "HEALTH", "ENTERTAI
 
 func parseCategorizeResponse(resp *genai.GenerateContentResponse) ([]ports.CategorySuggestion, error) {
 	if resp == nil || len(resp.Candidates) == 0 || resp.Candidates[0].Content == nil || len(resp.Candidates[0].Content.Parts) == 0 {
-		return nil, fmt.Errorf("gemini retornou resposta vazia")
+		return nil, fmt.Errorf("provedor de IA retornou resposta vazia")
 	}
 	var raw struct {
 		Suggestions []struct {
@@ -193,4 +193,24 @@ func parseCategorizeResponse(resp *genai.GenerateContentResponse) ([]ports.Categ
 		out[i] = ports.CategorySuggestion{ID: s.ID, Category: s.Category}
 	}
 	return out, nil
+}
+
+// CoachSystemPrompt devolve a instrução compartilhada do Coach.
+func CoachSystemPrompt() string { return coachPrompt }
+
+// CategorizeSystemPrompt devolve a instrução compartilhada de categorização.
+func CategorizeSystemPrompt() string { return categorizePrompt }
+
+// ParseCoachJSON decodifica a resposta do Coach no formato comum aos provedores.
+func ParseCoachJSON(raw string) (ports.CoachAdvice, error) {
+	return parseCoachResponse(responseFromText(raw))
+}
+
+// ParseCategoriesJSON decodifica sugestões no formato comum aos provedores.
+func ParseCategoriesJSON(raw string) ([]ports.CategorySuggestion, error) {
+	return parseCategorizeResponse(responseFromText(raw))
+}
+
+func responseFromText(text string) *genai.GenerateContentResponse {
+	return &genai.GenerateContentResponse{Candidates: []*genai.Candidate{{Content: &genai.Content{Parts: []*genai.Part{{Text: text}}}}}}
 }

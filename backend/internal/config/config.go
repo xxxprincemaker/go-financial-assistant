@@ -28,10 +28,15 @@ type Config struct {
 
 	DatabaseURL string
 
-	// GeminiAPIKey é opcional: sem ela, o que depende de IA fica desligado com aviso e o resto funciona.
+	// AIProvider seleciona o único provedor de IA ativo. Vazio equivale a Gemini por compatibilidade.
+	AIProvider string
+	// GeminiAPIKey e OpenAIAPIKey são opcionais; sem a chave do provedor ativo, o restante do app continua funcionando.
 	GeminiAPIKey string
-	// GeminiPaidPlan é a declaração de que o projeto da chave tem faturamento (serviços pagos). O Coach, que
-	// envia dados financeiros ao Gemini, só funciona com ela: no plano grátis o Google pode usar e revisar o conteúdo.
+	OpenAIAPIKey string
+	OpenAIModel  string
+	// AICoachEnabled é a autorização geral para enviar o contexto da prévia ao Coach.
+	AICoachEnabled bool
+	// GeminiPaidPlan permanece para compatibilidade com a configuração antiga.
 	GeminiPaidPlan bool
 	// Resumo semanal (calculado por código, sem IA) enviado ao dono no canal de conversa.
 	DigestEnabled  bool
@@ -144,7 +149,7 @@ func (l *loader) boolean(key string, def bool) bool {
 	return v
 }
 
-// app lê o que é do aplicativo em si: porta, banco, Gemini, dashboard.
+// app lê o que é do aplicativo em si: porta, banco, IA, dashboard.
 func (l *loader) app(cfg *Config) {
 	portStr := l.get("PORT", "8080")
 	port, err := strconv.Atoi(portStr)
@@ -157,8 +162,22 @@ func (l *loader) app(cfg *Config) {
 	if cfg.DatabaseURL == "" {
 		l.fail("DATABASE_URL é obrigatória")
 	}
+	cfg.AIProvider = strings.ToLower(strings.TrimSpace(l.get("AI_PROVIDER", "gemini")))
+	if cfg.AIProvider == "" {
+		cfg.AIProvider = "gemini"
+	}
+	if cfg.AIProvider != "gemini" && cfg.AIProvider != "openai" {
+		l.fail("AI_PROVIDER inválido: %q — use gemini ou openai", cfg.AIProvider)
+	}
 	cfg.GeminiAPIKey = strings.TrimSpace(l.get("GEMINI_API_KEY", ""))
+	cfg.OpenAIAPIKey = strings.TrimSpace(l.get("OPENAI_API_KEY", ""))
+	cfg.OpenAIModel = strings.TrimSpace(l.get("OPENAI_MODEL", "gpt-4o-mini"))
 	cfg.GeminiPaidPlan = l.boolean("GEMINI_PAID_PLAN", false)
+	if l.has("AI_COACH_ENABLED") {
+		cfg.AICoachEnabled = l.boolean("AI_COACH_ENABLED", false)
+	} else {
+		cfg.AICoachEnabled = cfg.GeminiPaidPlan
+	}
 	cfg.CoachModel = strings.TrimSpace(l.get("COACH_GEMINI_MODEL", ""))
 
 	cfg.AdminSecret = l.get("ADMIN_SECRET", "")
@@ -182,6 +201,14 @@ func (l *loader) app(cfg *Config) {
 		}
 		cfg.SetupReopen = reopen
 	}
+}
+
+func (l *loader) has(key string) bool {
+	if _, ok := l.overrides[key]; ok {
+		return true
+	}
+	v, ok := os.LookupEnv(key)
+	return ok && strings.TrimSpace(v) != ""
 }
 
 // channel lê o canal de conversa (WhatsApp ou Telegram). Sem nenhuma variável do canal escolhido não há canal (o setup

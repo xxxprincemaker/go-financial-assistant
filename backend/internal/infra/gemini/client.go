@@ -50,6 +50,8 @@ func (c *Client) Ready() bool {
 	return c.client != nil
 }
 
+func (c *Client) Name() string { return "Google Gemini" }
+
 func (c *Client) generate(ctx context.Context, model string, contents []*genai.Content, config *genai.GenerateContentConfig) (*genai.GenerateContentResponse, error) {
 	c.mu.RLock()
 	client := c.client
@@ -91,7 +93,7 @@ func NewClient(ctx context.Context, apiKey string) (*Client, error) {
 	config := &genai.GenerateContentConfig{
 		SystemInstruction: &genai.Content{
 			Parts: []*genai.Part{
-				{Text: systemPrompt},
+				{Text: SystemPrompt},
 			},
 		},
 		ResponseMIMEType: "application/json",
@@ -142,7 +144,7 @@ func (c *Client) AnalyzeDocument(ctx context.Context, data []byte, mimeType stri
 	statementConfig := &genai.GenerateContentConfig{
 		SystemInstruction: &genai.Content{
 			Parts: []*genai.Part{
-				{Text: statementPrompt},
+				{Text: StatementPrompt},
 			},
 		},
 		ResponseMIMEType: "application/json",
@@ -168,19 +170,19 @@ func (c *Client) AnalyzeDocument(ctx context.Context, data []byte, mimeType stri
 
 func parseResponse(resp *genai.GenerateContentResponse) (*ports.ExpenseAnalysis, error) {
 	if resp == nil || len(resp.Candidates) == 0 {
-		return nil, fmt.Errorf("gemini retornou resposta vazia")
+		return nil, fmt.Errorf("provedor de IA retornou resposta vazia")
 	}
 
 	candidate := resp.Candidates[0]
 	if candidate.Content == nil || len(candidate.Content.Parts) == 0 {
-		return nil, fmt.Errorf("gemini retornou conteúdo vazio")
+		return nil, fmt.Errorf("provedor de IA retornou conteúdo vazio")
 	}
 
 	rawJSON := candidate.Content.Parts[0].Text
 
 	var geminiResp geminiResponse
 	if err := json.Unmarshal([]byte(rawJSON), &geminiResp); err != nil {
-		return nil, fmt.Errorf("erro ao deserializar resposta gemini: %w", err)
+		return nil, fmt.Errorf("erro ao deserializar resposta de IA: %w", err)
 	}
 
 	return geminiResp.toAnalysis(rawJSON), nil
@@ -297,17 +299,17 @@ type geminiStatementResponse struct {
 
 func parseStatementResponse(resp *genai.GenerateContentResponse) (*ports.StatementAnalysis, error) {
 	if resp == nil || len(resp.Candidates) == 0 {
-		return nil, fmt.Errorf("gemini retornou resposta vazia")
+		return nil, fmt.Errorf("provedor de IA retornou resposta vazia")
 	}
 
 	candidate := resp.Candidates[0]
 	if candidate.Content == nil || len(candidate.Content.Parts) == 0 {
-		return nil, fmt.Errorf("gemini retornou conteúdo vazio")
+		return nil, fmt.Errorf("provedor de IA retornou conteúdo vazio")
 	}
 
 	var raw geminiStatementResponse
 	if err := json.Unmarshal([]byte(candidate.Content.Parts[0].Text), &raw); err != nil {
-		return nil, fmt.Errorf("erro ao deserializar extrato gemini: %w", err)
+		return nil, fmt.Errorf("erro ao deserializar extrato: %w", err)
 	}
 
 	analysis := &ports.StatementAnalysis{
@@ -388,4 +390,14 @@ func toExpenseType(s string) ports.ExpenseType {
 	default:
 		return ports.ExpenseTypeSingle
 	}
+}
+
+// ParseAnalysisJSON decodifica uma resposta financeira no formato comum aos provedores.
+func ParseAnalysisJSON(raw string) (*ports.ExpenseAnalysis, error) {
+	return parseResponse(&genai.GenerateContentResponse{Candidates: []*genai.Candidate{{Content: &genai.Content{Parts: []*genai.Part{{Text: raw}}}}}})
+}
+
+// ParseStatementJSON decodifica um extrato no formato comum aos provedores.
+func ParseStatementJSON(raw string) (*ports.StatementAnalysis, error) {
+	return parseStatementResponse(&genai.GenerateContentResponse{Candidates: []*genai.Candidate{{Content: &genai.Content{Parts: []*genai.Part{{Text: raw}}}}}})
 }

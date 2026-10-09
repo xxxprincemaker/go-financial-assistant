@@ -67,7 +67,7 @@ export const useCoachPreview = (month: string) =>
     queryFn: () => request<CoachPreview>(`/api/coach/preview?month=${month}`),
   })
 
-/** Envia ao Gemini o contexto da prévia (o hash garante que é o que a pessoa viu); a análise já volta gravada. */
+/** Envia ao provedor ativo o contexto da prévia (o hash garante que é o que a pessoa viu); a análise já volta gravada. */
 export const analyzeCoach = (month: string, hash: string) =>
   request<CoachAnalysis>('/api/coach/analyze', {
     method: 'POST',

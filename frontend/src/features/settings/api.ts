@@ -16,7 +16,7 @@ export interface SettingField {
   /** Vazio para segredos: eles nunca voltam para a tela. */
   value: string
   isSet: boolean
-  source: 'db' | 'env' | 'default'
+  source: 'db' | 'env' | 'default' | 'legacy'
   pendingRestart: boolean
   default: string
   /** Mudar ou restaurar exige confirmar a senha do dashboard. */
@@ -92,7 +92,7 @@ export const useSettingsAudit = () => useQuery({ queryKey: ['settings-audit'], q
 
 export const applyOwnTransfers = () => postJSON<{ cancelled: number }>('/api/settings/own-transfers/apply')
 
-export const testConnection = (target: 'pluggy' | 'gemini' | 'telegram') =>
+export const testConnection = (target: 'pluggy' | 'ai' | 'telegram') =>
   postJSON<{ ok: boolean; message: string }>(`/api/settings/test/${target}`)
 
 export const restartApp = () => postJSON('/api/restart')

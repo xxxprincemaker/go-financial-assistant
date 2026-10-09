@@ -17,9 +17,9 @@ import (
 
 const pendingImportTTL = 30 * time.Minute
 
-// aiOffText responde ao que precisa de IA quando o Gemini não está configurado: diz como ligar e o que já funciona.
+// aiOffText responde ao que precisa de IA quando o provedor ativo não está configurado.
 const aiOffText = "🤖 A IA está desligada, então ainda não entendo mensagens livres, fotos de recibo nem extratos.\n\n" +
-	"Para ligar, coloque a chave do Gemini no dashboard em *Configurações → IA (Gemini)* (vale na hora).\n\n" +
+	"Para ligar, configure a chave do provedor ativo no dashboard em *Configurações → Inteligência Artificial* (vale na hora).\n\n" +
 	"Sem ela já funcionam: /saldos, /resumo e /sync."
 
 var (

@@ -28,7 +28,7 @@ type SettingsDeps struct {
 	Cleaner      ports.TransferCleaner
 	PluggyCheck  func(ctx context.Context, clientID, clientSecret string, itemIDs []string) ([]pluggy.ItemCheck, error)
 	TelegramPing func(ctx context.Context, token string) (string, error)
-	GeminiPing   func(ctx context.Context, apiKey string) error
+	AIPing       func(ctx context.Context, provider, apiKey, model string) error
 	Restart      func() // pede ao processo que encerre; o Docker (restart: unless-stopped) o sobe de novo
 	Audit        settings.AuditLog
 	// Notify avisa a pessoa no chat (Telegram/WhatsApp) de logins, de algo sensível que mudou e de senha ou código errados. Pode ser nil.
@@ -178,7 +178,7 @@ func (a *api) resetSetting(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) registerSettings(rt routes, deps *SettingsDeps) {
-	a.coach.paidFn = func() bool { return deps.Service.Bool("GEMINI_PAID_PLAN") }
+	a.coach.enabledFn = func() bool { return deps.Service.Bool("AI_COACH_ENABLED") }
 	a.confirmLimiter = newIPRateLimiter(8, time.Minute)
 	writeLimiter := newIPRateLimiter(30, time.Minute)
 	rt.mux.Handle("GET /api/settings", rt.protected(a.getSettings))

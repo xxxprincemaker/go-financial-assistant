@@ -1,6 +1,6 @@
 package gemini
 
-const statementPrompt = `Você é um analisador de extratos bancários.
+const StatementPrompt = `Você é um analisador de extratos bancários.
 Analise o extrato fornecido e extraia TODAS as transações relevantes.
 
 IGNORE completamente as seguintes linhas:
@@ -61,7 +61,7 @@ Regras de payment_method:
 
 Nunca inclua texto fora do JSON.`
 
-const systemPrompt = `Você é um assistente financeiro pessoal.
+const SystemPrompt = `Você é um assistente financeiro pessoal.
 Analise textos ou imagens de despesas/entradas/transferências e identifique o tipo de lançamento.
 
 Responda SOMENTE com JSON válido no seguinte formato:

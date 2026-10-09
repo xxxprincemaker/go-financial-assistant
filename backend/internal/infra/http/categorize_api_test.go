@@ -32,6 +32,7 @@ type categorizeBody struct {
 	AI struct {
 		Enabled       bool            `json:"enabled"`
 		BlockedReason string          `json:"blockedReason"`
+		Provider      string          `json:"provider"`
 		Hash          string          `json:"hash"`
 		Context       json.RawMessage `json:"context"`
 	} `json:"ai"`
@@ -48,7 +49,7 @@ func getCategorize(t *testing.T, s *Server, c *http.Cookie) categorizeBody {
 }
 
 func TestAPI_Categorize(t *testing.T) {
-	s := newCoachAPI(t, categorizeReader(), &fakeCoach{}, true)
+	s := newCoachAPI(t, categorizeReader(), &fakeCoach{provider: "OpenAI"}, true)
 	c := login(t, s)
 	b := getCategorize(t, s, c)
 
@@ -58,6 +59,9 @@ func TestAPI_Categorize(t *testing.T) {
 	ctx := string(b.AI.Context)
 	if !b.AI.Enabled || !strings.Contains(ctx, `"nome":"PADARIA DO ZE"`) || !strings.Contains(ctx, `"nome":"Condominio Edificio"`) {
 		t.Errorf("a prévia da IA tem o comércio: %s", ctx)
+	}
+	if b.AI.Provider != "OpenAI" {
+		t.Fatalf("provedor exibido na prévia: %q", b.AI.Provider)
 	}
 	if strings.Contains(strings.ToLower(ctx), "pix") || strings.Contains(ctx, "Fulano") || strings.Contains(ctx, "123456") {
 		t.Errorf("Pix e números nunca vão à IA: %s", ctx)
@@ -79,7 +83,7 @@ func TestAPI_CategorizeBlockedWithoutPaidPlan(t *testing.T) {
 	s := newCoachAPI(t, categorizeReader(), &fakeCoach{}, false)
 	c := login(t, s)
 	b := getCategorize(t, s, c)
-	if b.AI.Enabled || !strings.Contains(b.AI.BlockedReason, "GEMINI_PAID_PLAN") {
+	if b.AI.Enabled || !strings.Contains(b.AI.BlockedReason, "autorizar") {
 		t.Errorf("bloqueado: %+v", b.AI)
 	}
 	coach := &fakeCoach{}

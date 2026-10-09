@@ -107,9 +107,13 @@ services:
     environment:
       PORT: 3000
       DATABASE_URL: postgres://finassist:finassist@postgres:5432/finassist?sslmode=disable
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_PAID_PLAN: ${GEMINI_PAID_PLAN:-false}
+      GEMINI_PAID_PLAN: ${GEMINI_PAID_PLAN:-}
       COACH_GEMINI_MODEL: ${COACH_GEMINI_MODEL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      AI_COACH_ENABLED: ${AI_COACH_ENABLED:-}
       DIGEST_ENABLED: ${DIGEST_ENABLED:-true}
       DIGEST_WEEKDAY: ${DIGEST_WEEKDAY:-monday}
       DIGEST_HOUR: ${DIGEST_HOUR:-9}

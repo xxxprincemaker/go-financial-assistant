@@ -72,7 +72,7 @@ func (a *api) categorize(w http.ResponseWriter, r *http.Request) {
 	blocked := a.coach.blockedReason()
 	writeJSON(w, http.StatusOK, map[string]any{
 		"categories": options, "groups": out,
-		"ai": map[string]any{"enabled": blocked == "", "blockedReason": blocked, "provider": "Google Gemini", "hash": hash, "bytes": len(payload), "context": json.RawMessage(payload)},
+		"ai": map[string]any{"enabled": blocked == "", "blockedReason": blocked, "provider": a.coach.providerName(), "hash": hash, "bytes": len(payload), "context": json.RawMessage(payload)},
 	})
 }
 
@@ -102,7 +102,7 @@ func (a *api) setCategoryRule(w http.ResponseWriter, r *http.Request) {
 }
 
 // suggestCategories pede à IA categorias para as contas da prévia. Nada é gravado: a pessoa revisa e aplica.
-// Mesmas travas do Coach: plano pago declarado, só o que a prévia mostrou (hash) e uma análise por vez.
+// Mesmas travas do Coach: autorização explícita, só o que a prévia mostrou (hash) e uma análise por vez.
 func (a *api) suggestCategories(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Hash string `json:"hash"`

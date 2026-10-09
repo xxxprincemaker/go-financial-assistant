@@ -428,7 +428,7 @@ func TestHandle_AIOff_ExplainsHowToEnable(t *testing.T) {
 			t.Fatalf("IA desligada não é erro: %v", err)
 		}
 		last := msgr.texts[len(msgr.texts)-1]
-		if !strings.Contains(last, "Configurações → IA (Gemini)") || strings.Contains(last, "Não consegui registrar") {
+		if !strings.Contains(last, "Configurações → Inteligência Artificial") || strings.Contains(last, "Não consegui registrar") {
 			t.Fatalf("resposta sem IA: %q", last)
 		}
 	}

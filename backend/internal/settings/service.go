@@ -43,6 +43,7 @@ const (
 	SourceDB      Source = "db"
 	SourceEnv     Source = "env"
 	SourceDefault Source = "default"
+	SourceLegacy  Source = "legacy"
 )
 
 // Service resolve cada configuração (banco > ambiente > padrão) e avisa quando algo muda.
@@ -112,6 +113,14 @@ func (s *Service) resolveLocked(d Def) string {
 	if v, ok := s.env(d.Env); ok && strings.TrimSpace(v) != "" {
 		return v
 	}
+	if d.Key == "AI_COACH_ENABLED" {
+		if v, ok := s.db["GEMINI_PAID_PLAN"]; ok {
+			return v
+		}
+		if v, ok := s.env("GEMINI_PAID_PLAN"); ok && strings.TrimSpace(v) != "" {
+			return v
+		}
+	}
 	return d.Default
 }
 
@@ -121,6 +130,14 @@ func (s *Service) sourceLocked(d Def) Source {
 	}
 	if v, ok := s.env(d.Env); ok && strings.TrimSpace(v) != "" {
 		return SourceEnv
+	}
+	if d.Key == "AI_COACH_ENABLED" {
+		if _, ok := s.db["GEMINI_PAID_PLAN"]; ok {
+			return SourceLegacy
+		}
+		if v, ok := s.env("GEMINI_PAID_PLAN"); ok && strings.TrimSpace(v) != "" {
+			return SourceLegacy
+		}
 	}
 	return SourceDefault
 }

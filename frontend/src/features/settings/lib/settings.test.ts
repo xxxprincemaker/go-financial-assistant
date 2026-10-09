@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { auditText, changedValues, currentValue, fieldStatus, needsConfirmation } from './settings'
+import { auditText, changedValues, currentValue, fieldStatus, needsConfirmation, SOURCE_LABEL, TEST_TARGET } from './settings'
 import type { SettingField, SettingGroup } from '../api'
 
 const f = (key: string, kind: SettingField['kind'], value = '', isSet = value !== ''): SettingField => ({
@@ -35,6 +35,11 @@ describe('settings', () => {
     expect(fieldStatus(group.fields[2])).toBe('Configurado')
     expect(fieldStatus(f('X_SECRET', 'secret'))).toBe('Não configurado')
     expect(fieldStatus(group.fields[0])).toBe('')
+  })
+
+  it('usa o teste de IA genérico e identifica a autorização herdada', () => {
+    expect(TEST_TARGET.ai).toBe('ai')
+    expect(SOURCE_LABEL.legacy).toContain('GEMINI_PAID_PLAN')
   })
 
   it('só pede a senha quando uma chave sensível mudou', () => {

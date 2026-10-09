@@ -31,9 +31,9 @@ type Server struct {
 	logger   *slog.Logger
 	cleanups []func(context.Context)
 
-	// coach é opcional; coachPaid é a declaração de que a chave do Gemini é de um projeto com faturamento.
-	coach     ports.Coach
-	coachPaid bool
+	// coach é opcional; coachEnabled autoriza enviar ao provedor ativo os dados da prévia.
+	coach        ports.Coach
+	coachEnabled bool
 
 	// syncer é opcional (nil sem Open Finance); alimenta o botão de sincronizar do painel.
 	syncer chat.Syncer
@@ -54,9 +54,9 @@ type Server struct {
 // SetSyncer liga a sincronização do Open Finance à API do dashboard (chame antes de MountAPI).
 func (s *Server) SetSyncer(syncer chat.Syncer) { s.syncer = syncer }
 
-// SetCoach liga o Coach com IA da API do dashboard. Sem plano pago declarado, ele fica bloqueado.
-func (s *Server) SetCoach(coach ports.Coach, paidPlan bool) {
-	s.coach, s.coachPaid = coach, paidPlan
+// SetCoach liga o Coach da API do dashboard. Sem autorização explícita, ele fica bloqueado.
+func (s *Server) SetCoach(coach ports.Coach, enabled bool) {
+	s.coach, s.coachEnabled = coach, enabled
 }
 
 // NewServer expõe apenas /health; as rotas de cada canal são adicionadas por Mount*.

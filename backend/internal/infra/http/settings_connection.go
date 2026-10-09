@@ -17,8 +17,8 @@ func (a *api) testConnection(w http.ResponseWriter, r *http.Request) {
 	switch r.PathValue("target") {
 	case "pluggy":
 		ok, msg = a.testPluggy(ctx)
-	case "gemini":
-		ok, msg = a.testGemini(ctx)
+	case "ai":
+		ok, msg = a.testAI(ctx)
 	case "telegram":
 		ok, msg = a.testTelegram(ctx)
 	default:
@@ -52,15 +52,20 @@ func (a *api) testPluggy(ctx context.Context) (bool, string) {
 	return true, "Tudo certo: credenciais aceitas e " + strconv.Itoa(len(checks)) + " conexão(ões) encontrada(s)."
 }
 
-func (a *api) testGemini(ctx context.Context) (bool, string) {
-	key := a.settings.Service.Get("GEMINI_API_KEY")
+func (a *api) testAI(ctx context.Context) (bool, string) {
+	provider := a.settings.Service.Get("AI_PROVIDER")
+	keyName, label, model := "GEMINI_API_KEY", "Gemini", ""
+	if provider == "openai" {
+		keyName, label, model = "OPENAI_API_KEY", "OpenAI", a.settings.Service.Get("OPENAI_MODEL")
+	}
+	key := a.settings.Service.Get(keyName)
 	if key == "" {
-		return false, "Preencha a chave do Gemini e salve."
+		return false, "Preencha a chave da API de " + label + " e salve."
 	}
-	if err := a.settings.GeminiPing(ctx, key); err != nil {
-		return false, "O Gemini recusou a chave ou não respondeu. Confira a chave e a cota."
+	if a.settings.AIPing == nil || a.settings.AIPing(ctx, provider, key, model) != nil {
+		return false, label + " recusou a chave ou não respondeu. Confira a chave, o modelo e a cota da API."
 	}
-	return true, "Chave aceita pelo Gemini."
+	return true, "Conexão com " + label + " aceita."
 }
 
 func (a *api) testTelegram(ctx context.Context) (bool, string) {

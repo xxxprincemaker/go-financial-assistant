@@ -212,11 +212,13 @@ Para buscar na hora, use o botão **Sincronizar** do menu lateral ou mande `/syn
 
 ## Passo 3: ligar a IA (opcional)
 
-A IA (Google Gemini) entende o que você escreve no Telegram, lê fotos de recibo e PDFs de extrato, sugere categorias e alimenta o **Coach**. **Sem ela o app funciona:** o Open Finance, o dashboard inteiro e os comandos `/saldos`, `/resumo` e `/sync` não dependem da IA. Se você mandar uma mensagem livre sem a IA ligada, o bot explica como ligar.
+A IA (Google Gemini ou OpenAI) entende o que você escreve no Telegram, lê fotos de recibo e PDFs de extrato, sugere categorias e alimenta o **Coach**. Há um provedor ativo por vez, selecionado em **Configurações → Inteligência Artificial**. **Sem uma chave válida o app continua funcionando:** Open Finance, dashboard e comandos `/saldos`, `/resumo` e `/sync` não dependem da IA. Mensagens livres explicam como configurar o provedor.
 
-1. Entre em [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) com a sua conta Google.
-2. Clique em **Create API key** e copie a chave.
-3. No dashboard: **Configurações → IA (Gemini)** → cole em **Chave da API do Gemini** → **Salvar** (com o código no Telegram) → **Testar conexão**.
+1. Escolha Google Gemini ou OpenAI e crie uma chave de API no serviço escolhido.
+2. No dashboard, abra **Configurações → Inteligência Artificial**, selecione o provedor e cole a chave correspondente. Para OpenAI, escolha também o modelo (padrão `gpt-4o-mini`).
+3. Salve (a mudança de provedor e as chaves pedem confirmação) e clique em **Testar conexão**. A troca vale na hora; não há fallback automático para o outro provedor.
+
+A API da OpenAI exige uma chave da plataforma e cobrança própria, separada da assinatura ChatGPT.
 
 Vale na hora, sem reiniciar. Teste mandando ao bot:
 
@@ -229,7 +231,7 @@ Bot:   ✅ Despesa registrada!
        💳 Pix
 ```
 
-**Coach e privacidade.** O Coach envia ao Gemini valores e nomes de estabelecimentos (nunca nomes de pessoas). No plano gratuito, o Google pode usar e revisar esse conteúdo, por isso o Coach só funciona se você marcar **"O projeto da chave tem faturamento (plano pago)"** no mesmo grupo. Antes de cada análise, a tela mostra exatamente o que será enviado. Detalhes em [docs/coach.md](docs/coach.md).
+**Coach e privacidade.** O Coach começa desligado. Em **Autorizar envio de dados ao Coach**, você autoriza o envio ao provedor ativo; antes de cada análise, a tela mostra os dados exatos e pede novo aceite. Instalações antigas podem herdar a autorização de `GEMINI_PAID_PLAN`; o dashboard identifica essa origem e permite alterá-la. Leia os termos e as configurações de privacidade do provedor escolhido. Detalhes em [docs/coach.md](docs/coach.md).
 
 ## Passo 4: ajustes finos
 
@@ -277,10 +279,10 @@ O que antes ficava no `.env` agora se edita no navegador. Cada campo mostra de o
 | Resumo semanal | ligar/desligar, dia, hora, fuso | na hora |
 | Sincronização | intervalo (horas), dias para trás, seus nomes | na hora |
 | Open Finance (Meu Pluggy) | Client ID, Client Secret, Item IDs | na hora |
-| IA (Gemini) | chave, plano pago (Coach), modelo do Coach | na hora |
+| Inteligência Artificial | provedor, chaves Gemini/OpenAI, modelo OpenAI, autorização do Coach | na hora |
 | Telegram | token do bot, seu ID | depois de reiniciar (botão **Reiniciar agora** na página) |
 
-- **Segredos** (Client Secret, chave do Gemini, token do bot) ficam cifrados no banco com a chave mestra, que nunca vai para o banco. Depois de salvos, nunca voltam para a tela: só aparece "Configurado".
+- **Segredos** (Client Secret, chaves Gemini/OpenAI, token do bot) ficam cifrados no banco com a chave mestra, que nunca vai para o banco. Depois de salvos, nunca voltam para a tela: só aparece "Configurado".
 - **Mudanças sensíveis** (segredos, bancos conectados, quem fala com o bot) pedem um código novo no Telegram. Assim, uma sessão roubada não basta.
 - **Histórico de alterações** no fim da página, sem os valores, e um aviso no Telegram quando algo sensível muda.
 
@@ -380,7 +382,11 @@ make db-shell                  # abre o psql no banco
 | [docs/decisoes/](docs/decisoes/README.md) | Decisões de arquitetura (ADRs) |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Rodar os testes e contribuir |
 
-**Tecnologias:** Go, PostgreSQL, React + TypeScript (Vite), Telegram Bot API, Meu Pluggy (Open Finance), Google Gemini (opcional), Docker Compose.
+**Tecnologias:** Go, PostgreSQL, React + TypeScript (Vite), Telegram Bot API, Meu Pluggy (Open Finance), Google Gemini e OpenAI (opcionais), Docker Compose.
+
+### Desenvolvimento com hot reload
+
+Use `make compose-dev` para subir a mesma infraestrutura com Air recompilando o backend Go e Vite servindo o dashboard em **http://localhost:5173**. Edite os arquivos no host; o Compose ativa polling para detectar mudanças do Windows. O Compose de produção continua disponível em `docker compose up -d --build`, servindo o frontend estático pelo nginx.
 
 ## Licença
 

@@ -64,6 +64,33 @@ func TestPrecedence_DBThenEnvThenDefault(t *testing.T) {
 	}
 }
 
+func TestAICoachEnabledInheritsLegacyOnlyWhenUnset(t *testing.T) {
+	legacy, _ := newSvc(t, map[string]string{"GEMINI_PAID_PLAN": "true"}, key16)
+	if !legacy.Bool("AI_COACH_ENABLED") || fieldOf(t, legacy, "AI_COACH_ENABLED").Source != SourceLegacy {
+		t.Fatal("configuração antiga deve ser herdada e identificada como legada")
+	}
+
+	explicit, _ := newSvc(t, map[string]string{"AI_COACH_ENABLED": "false", "GEMINI_PAID_PLAN": "true"}, key16)
+	if explicit.Bool("AI_COACH_ENABLED") || fieldOf(t, explicit, "AI_COACH_ENABLED").Source != SourceEnv {
+		t.Fatal("valor genérico explícito deve sobrepor a configuração antiga")
+	}
+
+	legacyDB, store := newSvc(t, nil, key16)
+	store.rows["GEMINI_PAID_PLAN"] = Row{Key: "GEMINI_PAID_PLAN", Value: "true"}
+	if err := legacyDB.Load(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if !legacyDB.Bool("AI_COACH_ENABLED") || fieldOf(t, legacyDB, "AI_COACH_ENABLED").Source != SourceLegacy {
+		t.Fatal("valor legado salvo no banco também deve ser herdado")
+	}
+	if _, err := legacyDB.Set(context.Background(), map[string]string{"AI_COACH_ENABLED": "false"}); err != nil {
+		t.Fatal(err)
+	}
+	if legacyDB.Bool("AI_COACH_ENABLED") || fieldOf(t, legacyDB, "AI_COACH_ENABLED").Source != SourceDB {
+		t.Fatal("valor genérico salvo deve sobrepor o legado")
+	}
+}
+
 func fieldOf(t *testing.T, s *Service, key string) Field {
 	t.Helper()
 	for _, f := range s.Fields("telegram") {
@@ -250,7 +277,7 @@ func TestSensitiveCoversSecretsAndAccessControl(t *testing.T) {
 			t.Errorf("segredo %s deve exigir a senha", d.Key)
 		}
 	}
-	for _, k := range []string{"PLUGGY_ITEM_IDS", "TELEGRAM_CHAT_ID", "EVOLUTION_API_URL", "OWNER_PHONE", "ALLOWED_NUMBERS"} {
+	for _, k := range []string{"AI_PROVIDER", "PLUGGY_ITEM_IDS", "TELEGRAM_CHAT_ID", "EVOLUTION_API_URL", "OWNER_PHONE", "ALLOWED_NUMBERS"} {
 		if d, _ := Lookup(k); !d.Sensitive() {
 			t.Errorf("%s redireciona dados ou abre acesso: deve exigir a senha", k)
 		}

@@ -108,7 +108,13 @@ func newSettingsAPIWith(t *testing.T, secretKey string, factor *SecondFactor) (*
 			}
 			return "meu_bot", nil
 		},
-		GeminiPing: func(_ context.Context, key string) error {
+		AIPing: func(_ context.Context, provider, key, model string) error {
+			if provider != "gemini" && provider != "openai" {
+				return errors.New("provedor inválido")
+			}
+			if provider == "openai" && model == "" {
+				return errors.New("modelo ausente")
+			}
 			if key == "ruim" {
 				return errors.New("API key not valid chave-vazada")
 			}
@@ -142,14 +148,14 @@ func TestSettingsAPI_RequiresSession(t *testing.T) {
 func TestSettingsAPI_GetNeverReturnsSecrets(t *testing.T) {
 	e, s := newSettingsAPI(t, goodKey)
 	c := login(t, s)
-	e.svc.Set(context.Background(), map[string]string{"PLUGGY_CLIENT_SECRET": "super-segredo", "GEMINI_API_KEY": "chave-gemini", "DIGEST_HOUR": "7"}) //nolint:errcheck
+	e.svc.Set(context.Background(), map[string]string{"PLUGGY_CLIENT_SECRET": "super-segredo", "GEMINI_API_KEY": "chave-gemini", "OPENAI_API_KEY": "chave-openai", "DIGEST_HOUR": "7"}) //nolint:errcheck
 
 	rec := do(s, "GET", "/api/settings", "", nil, c)
 	body := rec.Body.String()
 	if rec.Code != 200 || rec.Header().Get("Cache-Control") != "no-store" {
 		t.Fatalf("%d %v", rec.Code, rec.Header())
 	}
-	if strings.Contains(body, "super-segredo") || strings.Contains(body, "chave-gemini") {
+	if strings.Contains(body, "super-segredo") || strings.Contains(body, "chave-gemini") || strings.Contains(body, "chave-openai") {
 		t.Fatal("segredo vazou na resposta")
 	}
 	for _, want := range []string{`"key":"PLUGGY_CLIENT_SECRET"`, `"isSet":true`, `"source":"db"`, `"encryption":true`, `"channel":"telegram"`, `"title":"Telegram"`} {
@@ -314,13 +320,21 @@ func TestSettingsAPI_TestConnections(t *testing.T) {
 		t.Errorf("erro do serviço não pode ser repetido: %s", got)
 	}
 
-	e.svc.Set(context.Background(), map[string]string{"GEMINI_API_KEY": "ruim"}) //nolint:errcheck
-	if got := post("gemini"); !strings.Contains(got, `"ok":false`) || strings.Contains(got, "vazada") {
+	e.svc.Set(context.Background(), map[string]string{"AI_PROVIDER": "gemini", "GEMINI_API_KEY": "ruim"}) //nolint:errcheck
+	if got := post("ai"); !strings.Contains(got, `"ok":false`) || strings.Contains(got, "vazada") {
 		t.Errorf("gemini ruim: %s", got)
 	}
 	e.svc.Set(context.Background(), map[string]string{"GEMINI_API_KEY": "boa", "TELEGRAM_BOT_TOKEN": "tok"}) //nolint:errcheck
-	if got := post("gemini"); !strings.Contains(got, `"ok":true`) {
+	if got := post("ai"); !strings.Contains(got, `"ok":true`) {
 		t.Errorf("gemini bom: %s", got)
+	}
+	e.svc.Set(context.Background(), map[string]string{"AI_PROVIDER": "openai"}) //nolint:errcheck
+	if got := post("ai"); !strings.Contains(got, `"ok":false`) || !strings.Contains(got, "OpenAI") {
+		t.Errorf("sem chave do provedor ativo: %s", got)
+	}
+	e.svc.Set(context.Background(), map[string]string{"OPENAI_API_KEY": "boa", "OPENAI_MODEL": "gpt-4o-mini"}) //nolint:errcheck
+	if got := post("ai"); !strings.Contains(got, `"ok":true`) || !strings.Contains(got, "OpenAI") {
+		t.Errorf("OpenAI ativo: %s", got)
 	}
 	if got := post("telegram"); !strings.Contains(got, "@meu_bot") {
 		t.Errorf("telegram: %s", got)
@@ -328,6 +342,9 @@ func TestSettingsAPI_TestConnections(t *testing.T) {
 	e.svc.Set(context.Background(), map[string]string{"TELEGRAM_BOT_TOKEN": "ruim"}) //nolint:errcheck
 	if got := post("telegram"); !strings.Contains(got, `"ok":false`) || strings.Contains(got, "vazado") {
 		t.Errorf("telegram ruim: %s", got)
+	}
+	if rec := do(s, "POST", "/api/settings/test/gemini", "{}", jsonHdr, c); rec.Code != 404 {
+		t.Errorf("rota antiga = %d", rec.Code)
 	}
 	if rec := do(s, "POST", "/api/settings/test/outro", "{}", jsonHdr, c); rec.Code != 404 {
 		t.Errorf("alvo desconhecido = %d", rec.Code)
@@ -352,17 +369,17 @@ func TestSettingsAPI_Restart(t *testing.T) {
 	}
 }
 
-// O Coach consulta a configuração a cada uso: ligar o plano pago na página vale sem reiniciar.
-func TestCoachService_PaidFollowsFunc(t *testing.T) {
-	paid := false
+// O Coach consulta a autorização genérica a cada uso: mudanças na página valem sem reiniciar.
+func TestCoachService_EnabledFollowsFunc(t *testing.T) {
+	enabled := false
 	c := newCoachService(&fakeCoach{}, false)
-	c.paidFn = func() bool { return paid }
+	c.enabledFn = func() bool { return enabled }
 	if c.enabled() {
-		t.Fatal("bloqueado sem plano pago")
+		t.Fatal("bloqueado sem autorização")
 	}
-	paid = true
+	enabled = true
 	if !c.enabled() {
-		t.Error("deveria liberar quando a configuração mudar")
+		t.Error("deveria liberar quando a autorização mudar")
 	}
 }
 

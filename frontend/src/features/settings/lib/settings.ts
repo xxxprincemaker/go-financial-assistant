@@ -8,12 +8,15 @@ export const WEEKDAY_LABEL: Record<string, string> = {
   friday: 'Sexta-feira',
   saturday: 'Sábado',
   sunday: 'Domingo',
+  gemini: 'Google Gemini',
+  openai: 'OpenAI',
 }
 
 export const SOURCE_LABEL: Record<SettingField['source'], string> = {
   db: 'salvo aqui',
   env: 'definido no ambiente',
   default: 'padrão',
+  legacy: 'herdado de GEMINI_PAID_PLAN',
 }
 
 /** Valor mostrado: o rascunho se houver, senão o salvo. */
@@ -40,9 +43,9 @@ export const auditText = (action: 'set' | 'reset' | 'setup', label: string) =>
   action === 'setup' ? label : `${label} ${action === 'set' ? 'alterado' : 'restaurado ao padrão do ambiente'}`
 
 /** O teste de conexão de cada grupo, quando existe. */
-export const TEST_TARGET: Record<string, 'pluggy' | 'gemini' | 'telegram' | undefined> = {
+export const TEST_TARGET: Record<string, 'pluggy' | 'ai' | 'telegram' | undefined> = {
   pluggy: 'pluggy',
-  ai: 'gemini',
+  ai: 'ai',
   telegram: 'telegram',
 }
 

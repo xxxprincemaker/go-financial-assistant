@@ -40,6 +40,9 @@ func TestLoad_Success(t *testing.T) {
 	if cfg.GeminiAPIKey != "gemini-key" {
 		t.Errorf("GeminiAPIKey incorreta: %s", cfg.GeminiAPIKey)
 	}
+	if cfg.AIProvider != "gemini" || cfg.OpenAIModel != "gpt-4o-mini" || cfg.AICoachEnabled {
+		t.Errorf("padrões de IA incorretos: provider=%q model=%q coach=%v", cfg.AIProvider, cfg.OpenAIModel, cfg.AICoachEnabled)
+	}
 	if cfg.EvolutionAPIURL != "http://evolution:8080" {
 		t.Errorf("EvolutionAPIURL incorreta: %s", cfg.EvolutionAPIURL)
 	}
@@ -51,6 +54,27 @@ func TestLoad_Success(t *testing.T) {
 	}
 	if cfg.OwnerPhone != "5511999999999" {
 		t.Errorf("OwnerPhone incorreto: %s", cfg.OwnerPhone)
+	}
+}
+
+func TestLoad_OpenAIProviderSettings(t *testing.T) {
+	env := validEnv()
+	env["AI_PROVIDER"] = "openai"
+	env["OPENAI_API_KEY"] = "openai-key"
+	env["OPENAI_MODEL"] = "gpt-test"
+	setEnv(t, env)
+	cfg, err := Load(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.AIProvider != "openai" || cfg.OpenAIAPIKey != "openai-key" || cfg.OpenAIModel != "gpt-test" {
+		t.Fatalf("configuração da OpenAI = provider:%q key:%q model:%q", cfg.AIProvider, cfg.OpenAIAPIKey, cfg.OpenAIModel)
+	}
+
+	env["AI_PROVIDER"] = "outro"
+	setEnv(t, env)
+	if _, err := Load(nil); err == nil {
+		t.Fatal("provedor não reconhecido deve ser recusado")
 	}
 }
 
@@ -432,6 +456,31 @@ func TestLoad_CoachSettings(t *testing.T) {
 			}
 			if err == nil && (cfg.GeminiPaidPlan != tc.want || cfg.CoachModel != tc.model) {
 				t.Errorf("cfg = %v %q", cfg.GeminiPaidPlan, cfg.CoachModel)
+			}
+		})
+	}
+}
+
+func TestLoad_GenericCoachAuthorizationOverridesLegacy(t *testing.T) {
+	for name, tc := range map[string]struct {
+		generic string
+		want    bool
+	}{
+		"herda legado":         {generic: "", want: true},
+		"desativação genérica": {generic: "false", want: false},
+		"autorização genérica": {generic: "true", want: true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			env := validEnv()
+			env["GEMINI_PAID_PLAN"] = "true"
+			env["AI_COACH_ENABLED"] = tc.generic
+			setEnv(t, env)
+			cfg, err := Load(nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if cfg.AICoachEnabled != tc.want {
+				t.Fatalf("AI_COACH_ENABLED=%v, quer %v", cfg.AICoachEnabled, tc.want)
 			}
 		})
 	}
